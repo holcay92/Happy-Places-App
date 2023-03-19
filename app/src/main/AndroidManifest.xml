@@ -3,14 +3,22 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <application
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@style/Theme.HappyPlaces"
+        android:theme="@style/Theme.AppTheme"
         tools:targetApi="31">
+        <activity
+            android:name=".AddHappyPlaceActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:label="ADD HAPPY PLACE"
+            android:theme="@style/CustomNoActionBarTheme"
+
+            >   </activity>
         <activity
             android:name=".MainActivity"
             android:exported="true">
