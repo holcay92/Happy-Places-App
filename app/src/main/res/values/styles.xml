@@ -14,7 +14,9 @@
 
 <!--A custom theme is added to our toolbar. For updating the Home Button and title Color as per theme.)-->
     <style name="CustomToolbarStyle">
+        <!--for the title-->
         <item name="android:textColorPrimary">#FFFFFF</item>
+        <!--for the back arrow button-->
         <item name="android:colorControlNormal">#FFFFFF</item>
     </style>
 
