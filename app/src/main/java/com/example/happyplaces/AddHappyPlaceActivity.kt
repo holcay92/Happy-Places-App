@@ -67,7 +67,6 @@ class AddHappyPlaceActivity : AppCompatActivity(), View.OnClickListener {
         registerOnActivityForCameraResult()
 
     }
-
     override fun onClick(v: View?) {
         when (v?.id) {
             R.id.et_date -> {
@@ -88,7 +87,7 @@ class AddHappyPlaceActivity : AppCompatActivity(), View.OnClickListener {
                 pictureDialog.setItems(pictureDialogItems) { dialog, which ->
                     when (which) {
                         0 -> choosePhotoFromGallery()
-                        // 1 -> takePhotoFromCamera()
+                         1 -> takePhotoFromCamera()
                     }
                 }
                 pictureDialog.show()
@@ -97,6 +96,32 @@ class AddHappyPlaceActivity : AppCompatActivity(), View.OnClickListener {
 
     }
 
+    private fun takePhotoFromCamera() {
+        Dexter.withContext(this).withPermissions(
+            android.Manifest.permission.READ_EXTERNAL_STORAGE,
+            android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            android.Manifest.permission.CAMERA
+        ).withListener(object : MultiplePermissionsListener {
+            override fun onPermissionsChecked(report: MultiplePermissionsReport?) {
+                if (report!!.areAllPermissionsGranted()) {
+
+                    // Start Activity
+                    val cameraIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+                    cameraImageResultLauncher.launch(cameraIntent)
+
+                } else showRationalDialogForPermissions()
+            }
+
+            override fun onPermissionRationaleShouldBeShown(
+                permissions: MutableList<PermissionRequest>,
+                token: PermissionToken
+            ) {
+                showRationalDialogForPermissions()
+                token.continuePermissionRequest()
+            }
+        }).onSameThread().check()
+
+    }
     private fun choosePhotoFromGallery() {
         Dexter.withContext(this).withPermissions(
             android.Manifest.permission.READ_EXTERNAL_STORAGE,
@@ -123,8 +148,6 @@ class AddHappyPlaceActivity : AppCompatActivity(), View.OnClickListener {
         }).onSameThread().check()
 
     }
-
-
     private fun showRationalDialogForPermissions() {
         AlertDialog.Builder(this)
             .setMessage("It looks like you have turned off permissions required for this feature. It can be enabled under Application Settings")
@@ -153,7 +176,7 @@ class AddHappyPlaceActivity : AppCompatActivity(), View.OnClickListener {
                     if (data != null) {
                         val contentUri = data.data
                         try {
-                            binding?.ivPlaceImage?.setImageURI(contentUri)
+                            binding.ivPlaceImage.setImageURI(contentUri)
                         } catch (e: IOException) {
                             e.printStackTrace()
                             Toast.makeText(
@@ -177,8 +200,8 @@ class AddHappyPlaceActivity : AppCompatActivity(), View.OnClickListener {
                     val data: Intent? = result.data
                     if (data != null) {
                         try {
-                            val thumbNail: Bitmap = result!!.data!!.extras?.get("data") as Bitmap
-                            binding?.ivPlaceImage?.setImageBitmap(thumbNail)
+                            val thumbNail : Bitmap = data.extras?.get("data") as Bitmap
+                            binding.ivPlaceImage.setImageBitmap(thumbNail)
                         } catch (e: IOException) {
                             e.printStackTrace()
                             Toast.makeText(
@@ -193,12 +216,13 @@ class AddHappyPlaceActivity : AppCompatActivity(), View.OnClickListener {
             }
 
     }
-
     private fun updateDateInView() {
         val myFormat = "dd.MM.yyyy" // mention the format you need
         val sdf = SimpleDateFormat(myFormat, Locale.getDefault())
         binding.etDate.setText(sdf.format(cal.time).toString())
     }
+
+
 
 
 }
