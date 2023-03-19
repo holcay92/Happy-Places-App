@@ -1,9 +1,11 @@
 package com.example.happyplaces
 
+import android.app.Activity
 import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.graphics.Bitmap
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -11,12 +13,15 @@ import android.provider.MediaStore
 import android.provider.Settings
 import android.view.View
 import android.widget.Toast
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import com.example.happyplaces.databinding.ActivityAddHappyPlaceBinding
 import com.karumi.dexter.Dexter
 import com.karumi.dexter.MultiplePermissionsReport
 import com.karumi.dexter.PermissionToken
 import com.karumi.dexter.listener.PermissionRequest
 import com.karumi.dexter.listener.multi.MultiplePermissionsListener
+import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -26,6 +31,14 @@ class AddHappyPlaceActivity : AppCompatActivity(), View.OnClickListener {
     private lateinit var binding: ActivityAddHappyPlaceBinding
     private var cal = Calendar.getInstance()
     private lateinit var dateSetListener: DatePickerDialog.OnDateSetListener
+
+    companion object {
+        private const val CAMERA_PERMISSION_CODE = 1
+        private const val CAMERA_REQUEST_CODE = 2
+    }
+
+    private lateinit var galleryImageResultLauncher: ActivityResultLauncher<Intent>
+    private lateinit var cameraImageResultLauncher: ActivityResultLauncher<Intent>
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityAddHappyPlaceBinding.inflate(layoutInflater)
@@ -49,6 +62,10 @@ class AddHappyPlaceActivity : AppCompatActivity(), View.OnClickListener {
         binding.etDate.setOnClickListener(this)
         binding.tvAddImage.setOnClickListener(this)
 
+        // Register Activity Result Launcher
+        registerOnActivityForGalleryResult()
+        registerOnActivityForCameraResult()
+
     }
 
     override fun onClick(v: View?) {
@@ -71,7 +88,7 @@ class AddHappyPlaceActivity : AppCompatActivity(), View.OnClickListener {
                 pictureDialog.setItems(pictureDialogItems) { dialog, which ->
                     when (which) {
                         0 -> choosePhotoFromGallery()
-                       // 1 -> takePhotoFromCamera()
+                        // 1 -> takePhotoFromCamera()
                     }
                 }
                 pictureDialog.show()
@@ -81,32 +98,34 @@ class AddHappyPlaceActivity : AppCompatActivity(), View.OnClickListener {
     }
 
     private fun choosePhotoFromGallery() {
-        Dexter.withContext(this)
-            .withPermissions(
-                android.Manifest.permission.READ_EXTERNAL_STORAGE,
-                android.Manifest.permission.WRITE_EXTERNAL_STORAGE
-            )
-            .withListener(object : MultiplePermissionsListener {
-                override fun onPermissionsChecked(report: MultiplePermissionsReport?) {
-                    if (report!!.areAllPermissionsGranted()) {
-                        Toast.makeText(
-                            this@AddHappyPlaceActivity,
-                            "Storage READ/WRITE permissions are granted",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                }
+        Dexter.withContext(this).withPermissions(
+            android.Manifest.permission.READ_EXTERNAL_STORAGE,
+            android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+        ).withListener(object : MultiplePermissionsListener {
+            override fun onPermissionsChecked(report: MultiplePermissionsReport) {
+                if (report.areAllPermissionsGranted()) {
 
-                override fun onPermissionRationaleShouldBeShown(
-                    permissions: MutableList<PermissionRequest>?,
-                    token: PermissionToken?
-                ) {
-                    showRationalDialogForPermissions()
-                }
+                    // Start Activity
+                    val galleryIntent =
+                        Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+                    galleryImageResultLauncher.launch(galleryIntent)
 
-            }).onSameThread().check()
+                } else showRationalDialogForPermissions()
+            }
+
+            override fun onPermissionRationaleShouldBeShown(
+                permissions: MutableList<PermissionRequest>,
+                token: PermissionToken
+            ) {
+                showRationalDialogForPermissions()
+                token.continuePermissionRequest()
+            }
+        }).onSameThread().check()
+
     }
-private fun showRationalDialogForPermissions() {
+
+
+    private fun showRationalDialogForPermissions() {
         AlertDialog.Builder(this)
             .setMessage("It looks like you have turned off permissions required for this feature. It can be enabled under Application Settings")
             .setPositiveButton("GO TO SETTINGS") { _, _ ->
@@ -125,9 +144,61 @@ private fun showRationalDialogForPermissions() {
                 dialog.dismiss()
             }.show()
     }
+    private fun registerOnActivityForGalleryResult() {
+        galleryImageResultLauncher =
+            registerForActivityResult(ActivityResultContracts.StartActivityForResult())
+            { result ->
+                if (result.resultCode == Activity.RESULT_OK) {
+                    val data: Intent? = result.data
+                    if (data != null) {
+                        val contentUri = data.data
+                        try {
+                            binding?.ivPlaceImage?.setImageURI(contentUri)
+                        } catch (e: IOException) {
+                            e.printStackTrace()
+                            Toast.makeText(
+                                this,
+                                "Failed to load image from gallery",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
+
+                }
+            }
+
+    }
+    private fun registerOnActivityForCameraResult() {
+        cameraImageResultLauncher =
+            registerForActivityResult(ActivityResultContracts.StartActivityForResult())
+            { result ->
+                if (result.resultCode == Activity.RESULT_OK) {
+
+                    val data: Intent? = result.data
+                    if (data != null) {
+                        try {
+                            val thumbNail: Bitmap = result!!.data!!.extras?.get("data") as Bitmap
+                            binding?.ivPlaceImage?.setImageBitmap(thumbNail)
+                        } catch (e: IOException) {
+                            e.printStackTrace()
+                            Toast.makeText(
+                                this,
+                                "Failed to take photo from Camera",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
+
+                }
+            }
+
+    }
+
     private fun updateDateInView() {
         val myFormat = "dd.MM.yyyy" // mention the format you need
         val sdf = SimpleDateFormat(myFormat, Locale.getDefault())
         binding.etDate.setText(sdf.format(cal.time).toString())
     }
+
+
 }
