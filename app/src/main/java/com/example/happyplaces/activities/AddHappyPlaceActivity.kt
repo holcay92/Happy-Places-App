@@ -19,7 +19,9 @@ import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import com.example.happyplaces.R
+import com.example.happyplaces.database.DatabaseHandler
 import com.example.happyplaces.databinding.ActivityAddHappyPlaceBinding
+import com.example.happyplaces.models.HappyPlaceModel
 import com.karumi.dexter.Dexter
 import com.karumi.dexter.MultiplePermissionsReport
 import com.karumi.dexter.PermissionToken
@@ -38,6 +40,9 @@ class AddHappyPlaceActivity : AppCompatActivity(), View.OnClickListener {
     private lateinit var binding: ActivityAddHappyPlaceBinding
     private var cal = Calendar.getInstance()
     private lateinit var dateSetListener: DatePickerDialog.OnDateSetListener
+    private var saveImageToInternalStorage : Uri? = null
+    private var mLatitude : Double = 0.0
+    private var mLongitude : Double = 0.0
 
     companion object {
         private const val CAMERA_PERMISSION_CODE = 1
@@ -64,11 +69,14 @@ class AddHappyPlaceActivity : AppCompatActivity(), View.OnClickListener {
             updateDateInView()
 
         }
+        // update date everytime when we open the activity
+        updateDateInView()
         // we need to set the click listener for the edit text
         // because we want to show the date picker dialog when the user clicks on the edit text.
         // after clicking on the edit text we will show the date picker dialog via the click listener.
         binding.etDate.setOnClickListener(this)
         binding.tvAddImage.setOnClickListener(this)
+        binding.btnSave.setOnClickListener(this)
 
         // Register Activity Result Launcher
         registerOnActivityForGalleryResult()
@@ -100,6 +108,45 @@ class AddHappyPlaceActivity : AppCompatActivity(), View.OnClickListener {
                     }
                 }
                 pictureDialog.show()
+            }
+            R.id.btn_save -> {
+                when {
+                    binding.etTitle.text.isNullOrEmpty() -> {
+                        Toast.makeText(this, "Please enter title", Toast.LENGTH_SHORT).show()
+                    }
+                    binding.etDescription.text.isNullOrEmpty() -> {
+                        Toast.makeText(this, "Please enter description", Toast.LENGTH_SHORT).show()
+                    }
+                    binding.etLocation.text.isNullOrEmpty() -> {
+                        Toast.makeText(this, "Please enter location", Toast.LENGTH_SHORT).show()
+                    }
+                    saveImageToInternalStorage == null -> {
+                        Toast.makeText(this, "Please select image", Toast.LENGTH_SHORT).show()
+                    }
+                    else -> {
+                        val happyPlaceModel = HappyPlaceModel(
+                            0,
+                            binding.etTitle.text.toString(),
+                            saveImageToInternalStorage.toString(),
+                            binding.etDescription.text.toString(),
+                            binding.etDate.text.toString(),
+                            binding.etLocation.text.toString(),
+                            mLatitude,
+                            mLongitude
+                        )
+                        val dbHandler = DatabaseHandler(this)
+                        val addHappyPlace = dbHandler.addHappyPlace(happyPlaceModel)
+                        if (addHappyPlace > 0) {
+                            Toast.makeText(
+                                this,
+                                "Happy Place Added Successfully",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            setResult(Activity.RESULT_OK)
+                            finish()
+                        }
+                    }
+                }
             }
         }
 
@@ -215,7 +262,7 @@ class AddHappyPlaceActivity : AppCompatActivity(), View.OnClickListener {
                     if (data != null) {
                         try {
                             val thumbNail: Bitmap = data.extras?.get("data") as Bitmap
-                            val saveImageToInternalStorage = saveImageToInternalStorage(thumbNail)
+                            saveImageToInternalStorage = saveImageToInternalStorage(thumbNail)
                             Log.e("Saved Image : ", "Path :: $saveImageToInternalStorage")
 
                             binding.ivPlaceImage.setImageBitmap(thumbNail)
