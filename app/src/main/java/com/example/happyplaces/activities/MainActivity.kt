@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import com.example.happyplaces.databinding.ActivityMainBinding
 
+
 class MainActivity : AppCompatActivity() {
 
     private var binding : ActivityMainBinding? = null
