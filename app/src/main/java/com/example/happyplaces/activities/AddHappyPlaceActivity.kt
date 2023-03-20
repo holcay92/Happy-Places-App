@@ -273,7 +273,7 @@ class AddHappyPlaceActivity : AppCompatActivity(), View.OnClickListener {
      */
     private fun takePhotoFromCamera() {
 
-        Dexter.withActivity(this)
+        Dexter.withContext(this)
             .withPermissions(
                 android.Manifest.permission.READ_EXTERNAL_STORAGE,
                 android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
