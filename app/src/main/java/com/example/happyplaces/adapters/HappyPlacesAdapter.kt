@@ -15,11 +15,13 @@ open class HappyPlacesAdapter(
     private var list: ArrayList<HappyPlaceModel>
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
+    private var onClickListener: OnClickListener? = null
     private class MyViewHolder(binding: ItemHappyPlaceBinding) : RecyclerView.ViewHolder(binding.root) {
         // Holds the TextView that will add each animal to
         val tvTitle = binding.tvTitle
         val tvDescription = binding.tvDescription
         val ivPlaceImage = binding.ivPlaceImage
+
 
     }
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
@@ -41,9 +43,20 @@ open class HappyPlacesAdapter(
             holder.tvDescription.text = model.description
             holder.ivPlaceImage.setImageURI(Uri.parse(model.image))
         }
+        holder.itemView.setOnClickListener {
+            if (onClickListener != null) {
+                onClickListener!!.onClick(position, model)
+            }
+        }
     }
 
     override fun getItemCount(): Int {
         return list.size
+    }
+    interface OnClickListener {
+        fun onClick(position: Int, model: HappyPlaceModel)
+    }
+    fun setOnClickListener(onClickListener: OnClickListener) {
+        this.onClickListener = onClickListener
     }
 }
