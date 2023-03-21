@@ -5,16 +5,19 @@ import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.happyplaces.adapters.HappyPlacesAdapter
 import com.example.happyplaces.database.DatabaseHandler
 import com.example.happyplaces.databinding.ActivityMainBinding
 import com.example.happyplaces.models.HappyPlaceModel
+import com.example.happyplaces.utils.SwipeToEditCallback
 
 
 class MainActivity : AppCompatActivity() {
 
-    private var binding : ActivityMainBinding? = null
+    private var binding: ActivityMainBinding? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -26,6 +29,7 @@ class MainActivity : AppCompatActivity() {
         }
         getHappyPlacesListFromLocalDB()
     }
+
     private fun setupHappyPlacesRecyclerView(happyPlaceList: ArrayList<HappyPlaceModel>) {
 
         binding?.rvHappyPlacesList?.layoutManager = LinearLayoutManager(this)
@@ -43,24 +47,40 @@ class MainActivity : AppCompatActivity() {
                 startActivity(intent)
             }
         })
+        val editSwipeHandler = object : SwipeToEditCallback(this) {
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                // TODO (Step 5: Call the adapter function when it is swiped)
+                // START
+                val adapter = binding?.rvHappyPlacesList?.adapter as HappyPlacesAdapter
+                adapter.notifyEditItem(
+                    this@MainActivity,
+                    viewHolder.adapterPosition,
+                    ADD_PLACE_ACTIVITY_REQUEST_CODE
+                )
+                // END
+            }
+        }
+        val editItemTouchHelper = ItemTouchHelper(editSwipeHandler)
+        editItemTouchHelper.attachToRecyclerView(binding?.rvHappyPlacesList)
 
     }
+
     private fun getHappyPlacesListFromLocalDB() {
         val dbHandler = DatabaseHandler(this)
         val getHappyPlaceList: ArrayList<HappyPlaceModel> = dbHandler.getHappyPlacesList()
 
         if (getHappyPlaceList.size > 0) {
-          for(i in getHappyPlaceList){
-            binding?.rvHappyPlacesList?.visibility = android.view.View.VISIBLE
-            binding?.tvNoRecordsAvailable?.visibility = android.view.View.GONE
-            setupHappyPlacesRecyclerView(getHappyPlaceList)
-          }
-        }
-        else{
+            for (i in getHappyPlaceList) {
+                binding?.rvHappyPlacesList?.visibility = android.view.View.VISIBLE
+                binding?.tvNoRecordsAvailable?.visibility = android.view.View.GONE
+                setupHappyPlacesRecyclerView(getHappyPlaceList)
+            }
+        } else {
             binding?.rvHappyPlacesList?.visibility = android.view.View.GONE
             binding?.tvNoRecordsAvailable?.visibility = android.view.View.VISIBLE
         }
     }
+
     // A function to notify the main activity about the result of the add happy place activity.
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
@@ -73,6 +93,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+
     companion object {
         private const val ADD_PLACE_ACTIVITY_REQUEST_CODE = 1
         var EXTRA_PLACE_DETAILS = "extra_place_details"
