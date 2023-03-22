@@ -16,9 +16,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- TODO (Step 1 : Designing the view for Happy Places Detail Activity.)-->
-    <!--1. We have added the detail_screen_image_placeholder image in the drawable folder. -->
-    <!--START-->
     <ScrollView
         android:id="@+id/sv_main"
         android:layout_width="match_parent"
@@ -75,5 +72,4 @@
                 tools:text="Location" />
         </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>
-    <!--END-->
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -9,8 +9,11 @@ import android.content.ContextWrapper
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
+import android.os.Build
+import android.os.Build.VERSION.SDK_INT
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.os.Parcelable
 import android.provider.MediaStore
 import android.provider.Settings
 import android.util.Log
@@ -35,22 +38,17 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 class AddHappyPlaceActivity : AppCompatActivity(), View.OnClickListener {
-    /**
-     * An variable to get an instance calendar using the default time zone and locale.
-     */
+
     private var cal = Calendar.getInstance()
-    private var binding : ActivityAddHappyPlaceBinding? = null
-    /**
-     * A variable for DatePickerDialog OnDateSetListener.
-     * The listener used to indicate the user has finished selecting a date. Which we will be initialize later on.
-     */
+    private var binding: ActivityAddHappyPlaceBinding? = null
+
     private lateinit var dateSetListener: DatePickerDialog.OnDateSetListener
 
     private var saveImageToInternalStorage: Uri? = null
 
     private var mLatitude: Double = 0.0 // A variable which will hold the latitude value.
     private var mLongitude: Double = 0.0 // A variable which will hold the longitude value.
-    var mHappyPlaceDetails: HappyPlaceModel ?= null
+    var mHappyPlaceDetails: HappyPlaceModel? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         //This call the parent constructor
@@ -66,8 +64,12 @@ class AddHappyPlaceActivity : AppCompatActivity(), View.OnClickListener {
             onBackPressedDispatcher.onBackPressed()
         }
         if (intent.hasExtra(MainActivity.EXTRA_PLACE_DETAILS)) {
-           mHappyPlaceDetails =
-                intent.getParcelableExtra(MainActivity.EXTRA_PLACE_DETAILS)!!
+            mHappyPlaceDetails = if (SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                intent.getParcelableExtra(MainActivity.EXTRA_PLACE_DETAILS, HappyPlaceModel::class.java)
+            } else {
+                intent.getParcelableExtra(MainActivity.EXTRA_PLACE_DETAILS)
+            }
+
         }
 
         // https://www.tutorialkart.com/kotlin-android/android-datepicker-kotlin-example/
@@ -81,10 +83,6 @@ class AddHappyPlaceActivity : AppCompatActivity(), View.OnClickListener {
                 updateDateInView()
             }
 
-        // TODO (Step 2 : Here instead of validating the date we can set the current date to the view and user can change if needed.)
-        // START
-        updateDateInView() // Here the calender instance what we have created before will give us the current date which is formatted in the format in function
-        // END
         if (mHappyPlaceDetails != null) {
             supportActionBar?.title = "Edit Happy Place"
 
@@ -159,7 +157,7 @@ class AddHappyPlaceActivity : AppCompatActivity(), View.OnClickListener {
 
                         // Assigning all the values to data model class.
                         val happyPlaceModel = HappyPlaceModel(
-                            0,
+                            if (mHappyPlaceDetails == null) 0 else mHappyPlaceDetails!!.id, // Here we are checking if the mHappyPlaceDetails is null or not.
                             binding?.etTitle?.text.toString(),
                             saveImageToInternalStorage.toString(),
                             binding?.etDescription?.text.toString(),
@@ -172,35 +170,25 @@ class AddHappyPlaceActivity : AppCompatActivity(), View.OnClickListener {
                         // Here we initialize the database handler class.
                         val dbHandler = DatabaseHandler(this)
 
-                        val addHappyPlace = dbHandler.addHappyPlace(happyPlaceModel)
-
-                        if (addHappyPlace > 0) {
-                            // this is used to set the result to the main activity
-                            // after adding a new happy place details.
-                           setResult(Activity.RESULT_OK)
-                            finish();//finishing activity
+                        if (mHappyPlaceDetails == null) {
+                            val addHappyPlace = dbHandler.addHappyPlace(happyPlaceModel)
+                            if (addHappyPlace > 0) {
+                                setResult(Activity.RESULT_OK)
+                                finish() //finishing activity
+                            }
+                        } else {
+                            val updateHappyPlace = dbHandler.updateHappyPlace(happyPlaceModel)
+                            if (updateHappyPlace > 0) {
+                                setResult(Activity.RESULT_OK)
+                                finish() //finishing activity
+                            }
                         }
                     }
                 }
             }
-            // END
         }
     }
 
-    /**
-     * Receive the result from a previous call to
-     * {@link #startActivityForResult(Intent, int)}.  This follows the
-     * related Activity API as described there in
-     * {@link Activity#onActivityResult(int, int, Intent)}.
-     *
-     * @param requestCode The integer request code originally supplied to
-     *                    startActivityForResult(), allowing you to identify who this
-     *                    result came from.
-     * @param resultCode The integer result code returned by the child activity
-     *                   through its setResult().
-     * @param data An Intent, which can return result data to the caller
-     *               (various data can be attached to Intent "extras").
-     */
     public override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (resultCode == Activity.RESULT_OK) {
@@ -246,7 +234,9 @@ class AddHappyPlaceActivity : AppCompatActivity(), View.OnClickListener {
     private fun updateDateInView() {
         val myFormat = "dd.MM.yyyy" // mention the format you need
         val sdf = SimpleDateFormat(myFormat, Locale.getDefault()) // A date format
-        binding?.etDate?.setText(sdf.format(cal.time).toString()) // A selected date using format which we have used is set to the UI.
+        binding?.etDate?.setText(
+            sdf.format(cal.time).toString()
+        ) // A selected date using format which we have used is set to the UI.
     }
 
     /**
@@ -292,7 +282,7 @@ class AddHappyPlaceActivity : AppCompatActivity(), View.OnClickListener {
             .withPermissions(
                 android.Manifest.permission.READ_EXTERNAL_STORAGE,
                 android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                android. Manifest.permission.CAMERA
+                android.Manifest.permission.CAMERA
             )
             .withListener(object : MultiplePermissionsListener {
                 override fun onPermissionsChecked(report: MultiplePermissionsReport?) {
