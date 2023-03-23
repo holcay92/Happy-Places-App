@@ -73,9 +73,6 @@ class MainActivity : AppCompatActivity() {
         }
         val deleteItemTouchHelper = ItemTouchHelper(deleteSwipeHandler)
         deleteItemTouchHelper.attachToRecyclerView(binding?.rvHappyPlacesList)
-
-
-
     }
 
     private fun getHappyPlacesListFromLocalDB() {
