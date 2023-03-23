@@ -47,11 +47,13 @@ class DatabaseHandler(context: Context) :
         onCreate(db)
     }
 
-    // TODO (Step 4 : After Creating a database handler class. Let us create an function to insert a happy place detail to respective table.)
-    // START
-    /**
-     * Function to insert a Happy Place details to SQLite Database.
-     */
+
+    fun deleteHappyPlace(happyPlace: HappyPlaceModel): Int {
+        val db = this.writableDatabase
+        val success = db.delete(TABLE_HAPPY_PLACE, KEY_ID + "=" + happyPlace.id, null)
+        db.close()
+        return success
+    }
     fun addHappyPlace(happyPlace: HappyPlaceModel): Long {
         val db = this.writableDatabase
 
